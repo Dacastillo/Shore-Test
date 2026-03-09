@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "Si usas este código, cita tanto este repositorio como CoastSat."
+type: software
+authors:
+  - family-names: Castillo-Castro
+    given-names: Daniel
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+    affiliation: "Santiago, Chile"
+title: "Shore-Test: Análisis de línea de costa con CoastSat"
+version: "1.0.0"
+date-released: "2023-11-01"
+url: "https://github.com/Dacastillo/Shore-Test"
+license: MIT
+keywords:
+  - shoreline
+  - coastal monitoring
+  - remote sensing
+  - Google Earth Engine
+  - CoastSat
+  - satellite imagery
+  - Landsat
+  - Sentinel-2
+  - Australia
+references:
+  - type: software
+    authors:
+      - family-names: Vos
+        given-names: Kilian
+    title: "CoastSat"
+    url: "https://github.com/kvos/CoastSat"
+    year: 2019
+  - type: article
+    authors:
+      - family-names: Vos
+        given-names: Kilian
+        et-al: true
+    title: "CoastSat: A Google Earth Engine-enabled Python toolkit to extract shorelines from publicly available satellite imagery"
+    journal: "Environmental Modelling & Software"
+    volume: 122
+    pages: "104528"
+    year: 2019
+    doi: "10.1016/j.envsoft.2019.104528"

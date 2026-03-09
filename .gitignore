@@ -1,0 +1,48 @@
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+.venv/
+env/
+venv/
+
+# ─── Archivos comprimidos (nunca versionar entornos o datos grandes así) ─────
+*.7z
+*.zip
+*.tar.gz
+*.rar
+
+# ─── Datos satelitales CoastSat (regenerables desde GEE) ─────────────────────
+# Imágenes descargadas (pueden ser GB)
+data/*/jpg_files/
+data/*/ms/
+data/*/pan/
+data/*/swir/
+# Resultados intermedios regenerables
+data/*_output.pkl
+data/*_metadata.pkl
+
+# ─── Modelos (versionar solo los .pkl finales entrenados, no intermedios) ─────
+models/*_temp.pkl
+models/*_backup.pkl
+
+# ─── Outputs de figura (regenerables desde los notebooks) ────────────────────
+*.jpg
+*.jpeg
+*.gif
+
+# ─── Sistema operativo y editores ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*~
+*.swp
+.vscode/
+.idea/
+
+# ─── Archivos de auditoría ───────────────────────────────────────────────────
+audit_log.txt

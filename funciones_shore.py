@@ -1,3 +1,25 @@
+"""
+funciones_shore.py — Funciones auxiliares para el análisis de línea de costa.
+
+Extensiones y wrappers sobre el módulo coastsat para el análisis específico
+de sitios costeros utilizando imágenes satelitales.
+
+Funciones principales:
+    - dist: Calcula la distancia euclidiana entre dos puntos
+    - dist_point_to_segment: Calcula la distancia de un punto a un segmento
+    - PolygonInteractor: Clase para edición interactiva de polígonos
+    - TESTFITFUNC: Función de ajuste para rectificación de imágenes
+    - onScreen: Verifica si coordenadas están dentro de los límites de pantalla
+
+Dependencias:
+    - coastsat
+    - numpy, scipy, matplotlib
+    - scikit-image, scikit-learn
+    - pandas
+
+Autor: Daniel Castillo-Castro
+"""
+
 import scipy.io
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
@@ -33,9 +55,22 @@ else:
     import joblib
 from py import SDS_download, SDS_preprocess, SDS_shoreline, SDS_tools, SDS_classify
 
+
 def dist(x, y):
     """
-    Return the distance between two points.
+    Calcula la distancia euclidiana entre dos puntos.
+
+    Parameters
+    ----------
+    x : array_like
+        Primer punto como secuencia (x, y).
+    y : array_like
+        Segundo punto como secuencia (x, y).
+
+    Returns
+    -------
+    float
+        Distancia euclidiana entre los puntos x e y.
     """
     d = x - y
     return np.sqrt(np.dot(d, d))
@@ -43,10 +78,24 @@ def dist(x, y):
 
 def dist_point_to_segment(p, s0, s1):
     """
-    Get the distance of a point to a segment.
-      *p*, *s0*, *s1* are *xy* sequences
-    This algorithm from
+    Calcula la distancia de un punto a un segmento de línea.
+
+    Algoritmo tomado de:
     http://geomalgorithms.com/a02-_lines.html
+
+    Parameters
+    ----------
+    p : array_like
+        Punto como secuencia (x, y).
+    s0 : array_like
+        Punto inicial del segmento como secuencia (x, y).
+    s1 : array_like
+        Punto final del segmento como secuencia (x, y).
+
+    Returns
+    -------
+    float
+        Distancia mínima del punto p al segmento definido por s0 y s1.
     """
     v = s1 - s0
     w = p - s0
@@ -63,18 +112,27 @@ def dist_point_to_segment(p, s0, s1):
 
 class PolygonInteractor:
     """
-    A polygon editor.
+    Editor interactivo de polígonos para matplotlib.
 
-    Key-bindings
+    Permite editar vértices de un polígono mediante interacción con mouse y teclado.
 
-      't' toggle vertex markers on and off.  When vertex markers are on,
-          you can move them, delete them
+    Atributos
+    ---------
+    showverts : bool
+        Controla la visibilidad de los marcadores de vértices.
+    epsilon : int
+        Distancia máxima en píxeles para considerar un clic como selección de vértice.
 
-      'd' delete the vertex under point
+    Teclas de acceso rápido
+    -----------------------
+    't' : Alternar visibilidad de marcadores de vértices
+    'd' : Eliminar el vértice bajo el cursor
+    'i' : Insertar un nuevo vértice en la posición del cursor
 
-      'i' insert a vertex at point.  You must be within epsilon of the
-          line connecting two existing vertices
-
+    Notes
+    -----
+    Esta clase es útil para editar manualmente regiones de interés (ROI)
+    o líneas de costa en herramientas de análisis de imágenes satelitales.
     """
 
     showverts = True
@@ -137,7 +195,14 @@ class PolygonInteractor:
         return ind
 
     def on_button_press(self, event):
-        """Callback for mouse button presses."""
+        """
+        Callback para eventos de presión de botones del mouse.
+
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.MouseEvent
+            Evento de clic del mouse.
+        """
         if not self.showverts:
             return
         if event.inaxes is None:
@@ -147,7 +212,14 @@ class PolygonInteractor:
         self._ind = self.get_ind_under_point(event)
 
     def on_button_release(self, event):
-        """Callback for mouse button releases."""
+        """
+        Callback para eventos de liberación de botones del mouse.
+
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.MouseEvent
+            Evento de liberación del mouse.
+        """
         if not self.showverts:
             return
         if event.button != 1:
@@ -155,7 +227,19 @@ class PolygonInteractor:
         self._ind = None
 
     def on_key_press(self, event):
-        """Callback for key presses."""
+        """
+        Callback para eventos de presión de teclas.
+
+        Teclas soportadas:
+        - 't': Alternar visibilidad de vértices
+        - 'd': Eliminar vértice bajo el cursor
+        - 'i': Insertar vértice en la posición del cursor
+
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.KeyEvent
+            Evento de presión de tecla.
+        """
         if not event.inaxes:
             return
         if event.key == 't':
@@ -187,7 +271,16 @@ class PolygonInteractor:
             self.canvas.draw_idle()
 
     def on_mouse_move(self, event):
-        """Callback for mouse movements."""
+        """
+        Callback para eventos de movimiento del mouse.
+
+        Actualiza la posición del vértice seleccionado cuando se arrastra el mouse.
+
+        Parameters
+        ----------
+        event : matplotlib.backend_bases.MouseEvent
+            Evento de movimiento del mouse.
+        """
         if not self.showverts:
             return
         if self._ind is None:
@@ -209,12 +302,49 @@ class PolygonInteractor:
         self.ax.draw_artist(self.poly)
         self.ax.draw_artist(self.line)
         self.canvas.blit(self.ax.bbox)
-        
+
+
 def TESTFITFUNC(xyz, beta0, beta1, beta2, beta3, beta4, beta5):
+    """
+    Función de ajuste para rectificación de imágenes oblicuas.
+
+    Calcula las coordenadas de imagen (U, V) a partir de coordenadas del mundo
+    (x, y, z) utilizando los parámetros de cámara almacenados en
+    'data/RectifyImagePython.mat'. Esta función se usa con scipy.optimize.curve_fit
+    para ajustar los parámetros de orientación externa de la cámara.
+
+    Parameters
+    ----------
+    xyz : array_like
+        Coordenadas del mundo (x, y, z) como array de forma (3, N).
+    beta0 : float
+        Coordenada X del centro de proyección.
+    beta1 : float
+        Coordenada Y del centro de proyección.
+    beta2 : float
+        Coordenada Z del centro de proyección.
+    beta3 : float
+        Ángulo de rotación (alfa) en radianes.
+    beta4 : float
+        Ángulo de rotación (theta) en radianes.
+    beta5 : float
+        Ángulo de rotación (sigma) en radianes.
+
+    Returns
+    -------
+    UV : ndarray
+        Coordenadas de imagen (U, V) como array de forma (N, 2).
+
+    Notes
+    -----
+    scipy.optimize.curve_fit requiere que los parámetros a ajustar sean
+    argumentos separados en la definición de la función, por lo que beta
+    se define como beta0, beta1, etc. en lugar de un array beta.
+    """
     #note: scipy.optimize.curve_fit required the parameters to fit as separate arguments in
     #the function definition. This is why beta1, beta2 etc... are written rather than just beta.
     mat = scipy.io.loadmat('data/RectifyImagePython.mat')
-    
+
     fx = mat['fx'][0,0].astype(float)
     #note: it was found that -fy when data type is unit 16 returned a very unusul result.
     #so it is impotant these are dtype: float.
@@ -236,7 +366,7 @@ def TESTFITFUNC(xyz, beta0, beta1, beta2, beta3, beta4, beta5):
         R[2,0] = np.sin(t) * np.sin(a)
         R[2,1] = np.sin(t) * np.cos(a)
         R[2,2] = -np.cos(t)
-    
+
     angles2R(beta3, beta4, beta5)
 
     I = np.eye(3)
@@ -260,8 +390,36 @@ def TESTFITFUNC(xyz, beta0, beta1, beta2, beta3, beta4, beta5):
     UV = UV/np.matlib.repmat(UV[2,:],3,1)
     UV = np.transpose(np.concatenate((UV[0,:], UV[1,:])))
     return UV
-    
+
+
 def onScreen(U, V, Umax, Vmax):
+    """
+    Verifica si las coordenadas están dentro de los límites de la imagen.
+
+    Determina qué puntos de una cuadrícula de coordenadas caen dentro
+    de los límites válidos de una imagen oblicua.
+
+    Parameters
+    ----------
+    U : array_like
+        Coordenadas U (horizontal) de los puntos.
+    V : array_like
+        Coordenadas V (vertical) de los puntos.
+    Umax : int
+        Límite máximo en la dirección U (ancho de imagen).
+    Vmax : int
+        Límite máximo en la dirección V (alto de imagen).
+
+    Returns
+    -------
+    yesNo : ndarray
+        Array binario de forma (N, 1) donde 1 indica que el punto
+        correspondiente está dentro de los límites de la imagen.
+
+    Notes
+    -----
+    Los límites mínimos se asumen como 1 (Umin = 1, Vmin = 1).
+    """
     Umin = 1
     Vmin = 1
 

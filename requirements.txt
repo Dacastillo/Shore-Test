@@ -1,0 +1,33 @@
+# CoastSat y dependencias geoespaciales
+# Nota: Se recomienda instalar earthengine-api y geopandas via conda
+coastsat>=2.5.0
+earthengine-api>=0.1.360
+geopandas>=0.13.0
+scikit-image>=0.20.0
+shapely>=2.0.0
+fiona>=1.9.0
+pyproj>=3.6.0
+
+# Científico general
+numpy>=1.24.0
+scipy>=1.11.0
+matplotlib>=3.7.0
+pandas>=2.0.0
+astropy>=5.3.0
+
+# Machine Learning
+scikit-learn>=1.2.0
+
+# Jupyter
+jupyter>=1.0.0
+ipykernel>=6.25.0
+nbconvert>=7.0.0
+
+# Visualización interactiva
+pyqt5>=5.15.0
+
+# Utilidades
+imageio>=2.31.0
+
+# Nota: Para corrección de mareas (CoastSat >= 3.0), instalar pyfes via conda:
+# conda install -c conda-forge pyfes
